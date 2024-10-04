@@ -5,8 +5,8 @@ train_data:
   video_path: "data/car-turn.mp4"
   prompt: "a jeep car is moving on the road"
   n_sample_frames: 8
-  width: 64
-  height: 64
+  width: 256
+  height: 256
   sample_start_idx: 16
   sample_frame_rate: 2
 
@@ -17,17 +17,17 @@ validation_data:
     - "a jeep car is moving on the road, cartoon style"
     - "a sports car is moving on the road"
   video_length: 8
-  width: 64
-  height: 64
+  width: 256
+  height: 256
   num_inference_steps: 50
   guidance_scale: 12.5
   use_inv_latent: True
   num_inv_steps: 50
 
 learning_rate: 5e-5
-train_batch_size: 2
+train_batch_size: 8
 max_train_steps: 50
-checkpointing_steps: 50
+checkpointing_steps: 25
 validation_steps: 50
 trainable_modules:
   - "temp_adapter"
