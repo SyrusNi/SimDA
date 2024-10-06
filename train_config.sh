@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 accelerate launch --num_processes 1 run_with_submit.py --config="configs/car-turn.yaml" --mem_gb=40 --ngpus=1 --ncpus=1 --timeout=120 --qos='default'
