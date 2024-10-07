@@ -24,7 +24,7 @@ from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from simda.models.unet import UNet3DConditionModel
-from simda.data.dataset import SimDADataset
+from simda.data.dataset import ActivityNet
 from simda.pipelines.pipeline_simda import SimDAPipeline
 from simda.util import save_videos_grid, ddim_inversion
 from einops import rearrange
@@ -47,6 +47,7 @@ def train(
         "adapter_s"
         "adapter_ffn"
     ),
+    train_size: int = 1,
     train_batch_size: int = 1,
     max_train_steps: int = 500,
     learning_rate: float = 3e-5,
@@ -154,12 +155,17 @@ def train(
     )
 
     # Get the training dataset
-    train_dataset = SimDADataset(**train_data)
+    train_dataset = ActivityNet(**train_data)
 
+    # Split the dataset
+    train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [train_size, len(train_dataset) - train_size])
+
+    '''
     # Preprocessing the dataset
     train_dataset.prompt_ids = tokenizer(
         train_dataset.prompt, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
     ).input_ids[0]
+    '''
 
     # DataLoaders creation:
     train_dataloader = torch.utils.data.DataLoader(
@@ -275,7 +281,9 @@ def train(
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
                 # Get the text embedding for conditioning
-                encoder_hidden_states = text_encoder(batch["prompt_ids"])[0]
+                tokens = tokenizer(batch["prompt_ids"], max_length=tokenizer.model_max_length, 
+                                   padding="max_length", truncation=True, return_tensors="pt").input_ids.to(accelerator.device)
+                encoder_hidden_states = text_encoder(tokens)[0]
 
                 # Get the target for loss depending on the prediction type
                 if noise_scheduler.prediction_type == "epsilon":
@@ -288,7 +296,7 @@ def train(
                 # Predict the noise residual and compute loss
                 model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
                 loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-
+                #print(loss)
                 # Gather the losses across all processes for logging (if we use distributed training).
                 avg_loss = accelerator.gather(loss.repeat(train_batch_size)).mean()
                 train_loss += avg_loss.item() / gradient_accumulation_steps
@@ -359,7 +367,7 @@ def train(
     accelerator.end_training()
 
 def get_args_parser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser('SimDA', add_help=False)
     parser.add_argument("--config", type=str, default="./configs/simda.yaml")
     return parser
 
