@@ -1,12 +1,12 @@
 pretrained_model_path: "models/stable-diffusion-2-1"
-output_dir: "checkpoints/local_try"
+output_dir: "checkpoints/try"
 
 train_data:
   video_path: "ActivityNet"
   #prompt: "a jeep car is moving on the road"
   n_sample_frames: 8
-  width: 256
-  height: 256
+  width: 64
+  height: 64
   #sample_start_idx: 16
   sample_frame_rate: 4
 
@@ -17,8 +17,8 @@ validation_data:
     - "a jeep car is moving on the road, cartoon style"
     - "a sports car is moving on the road"
   video_length: 8
-  width: 256
-  height: 256
+  width: 64
+  height: 64
   num_inference_steps: 50
   guidance_scale: 12.5
   use_inv_latent: False
@@ -27,7 +27,7 @@ validation_data:
 train_size: 128
 learning_rate: 5e-5
 train_batch_size: 16
-max_train_steps: 200
+max_train_steps: 10
 checkpointing_steps: 100
 validation_steps: 200
 trainable_modules:

@@ -158,7 +158,8 @@ def train(
     train_dataset = ActivityNet(**train_data)
 
     # Split the dataset
-    train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [train_size, len(train_dataset) - train_size])
+    if train_size:
+        train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [train_size, len(train_dataset) - train_size])
 
     '''
     # Preprocessing the dataset

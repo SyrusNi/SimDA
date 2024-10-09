@@ -16,7 +16,7 @@ def parse_args():
     classification_parser = classification.get_args_parser()
     parser = argparse.ArgumentParser("Submitit", parents=[classification_parser])
     parser.add_argument("--name", default='AMD', type=str, help="Name of submit")
-    parser.add_argument("--mem_gb", default=40, type=float, help="Memory to request")
+    parser.add_argument("--mem_gb", default=40, type=float, help="Memory to request on each node")
     parser.add_argument("--ngpus", default=2, type=int, help="Number of gpus to request on each node")
     parser.add_argument("--ntasks", default=1, type=int, help="Number of tasks to request on each node")
     parser.add_argument("--ncpus", default=1, type=int, help="Number of cpus to request for each task")
