@@ -1,1 +1,1 @@
-python run_with_submit.py --config="configs/train.yaml" --mem_gb=40 --ngpus=2 --ncpus=2 --timeout=120 --qos='low'
+python run_with_submit.py --config="configs/train.yaml" --mem_gb=40 --ngpus=1 --ncpus=2 --timeout=120 --qos='low'

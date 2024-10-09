@@ -24,7 +24,7 @@ from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 
 from simda.models.unet import UNet3DConditionModel
-from simda.data.dataset import ActivityNet
+from simda.data.dataset import SimDADataset
 from simda.pipelines.pipeline_simda import SimDAPipeline
 from simda.util import save_videos_grid, ddim_inversion
 from einops import rearrange
@@ -36,7 +36,7 @@ check_min_version("0.10.0.dev0")
 logger = get_logger(__name__, log_level="INFO")
 
 
-def train(
+def main(
     pretrained_model_path: str,
     output_dir: str,
     train_data: Dict,
@@ -47,7 +47,6 @@ def train(
         "adapter_s"
         "adapter_ffn"
     ),
-    train_size: int = 1,
     train_batch_size: int = 1,
     max_train_steps: int = 500,
     learning_rate: float = 3e-5,
@@ -73,7 +72,6 @@ def train(
     accelerator = Accelerator(
         gradient_accumulation_steps=gradient_accumulation_steps,
         mixed_precision=mixed_precision,
-        log_with="wandb"
     )
 
     # Make one log on every process with the configuration for debugging.
@@ -156,18 +154,12 @@ def train(
     )
 
     # Get the training dataset
-    train_dataset = ActivityNet(**train_data)
+    train_dataset = SimDADataset(**train_data)
 
-    # Split the dataset
-    if train_size:
-        train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [train_size, len(train_dataset) - train_size])
-
-    '''
     # Preprocessing the dataset
     train_dataset.prompt_ids = tokenizer(
         train_dataset.prompt, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
     ).input_ids[0]
-    '''
 
     # DataLoaders creation:
     train_dataloader = torch.utils.data.DataLoader(
@@ -283,9 +275,7 @@ def train(
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
                 # Get the text embedding for conditioning
-                tokens = tokenizer(batch["prompt_ids"], max_length=tokenizer.model_max_length, 
-                                   padding="max_length", truncation=True, return_tensors="pt").input_ids.to(accelerator.device)
-                encoder_hidden_states = text_encoder(tokens)[0]
+                encoder_hidden_states = text_encoder(batch["prompt_ids"])[0]
 
                 # Get the target for loss depending on the prediction type
                 if noise_scheduler.prediction_type == "epsilon":
@@ -298,11 +288,11 @@ def train(
                 # Predict the noise residual and compute loss
                 model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
                 loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-                #print(loss)
+
                 # Gather the losses across all processes for logging (if we use distributed training).
                 avg_loss = accelerator.gather(loss.repeat(train_batch_size)).mean()
                 train_loss += avg_loss.item() / gradient_accumulation_steps
-
+                #print(loss)
                 # Backpropagate
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
@@ -367,18 +357,6 @@ def train(
         pipeline.save_pretrained(output_dir)
 
     accelerator.end_training()
-    print(torch.cuda.get_device_name(accelerator.device))
-
-def get_args_parser():
-    parser = argparse.ArgumentParser('SimDA', add_help=False)
-    parser.add_argument("--config", type=str, default="./configs/simda.yaml")
-    return parser
-
-def main(args):
-
-    print('start:', torch.cuda.max_memory_allocated())
-    train(**OmegaConf.load(args.config))
-    print('end:', torch.cuda.max_memory_allocated())
 
 
 if __name__ == "__main__":
@@ -386,4 +364,4 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, default="./configs/simda.yaml")
     args = parser.parse_args()
 
-    main(args)
+    main(**OmegaConf.load(args.config))
