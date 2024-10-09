@@ -24,7 +24,7 @@ validation_data:
   use_inv_latent: False
   num_inv_steps: 50
 
-train_size: None
+train_size: null
 learning_rate: 5e-5
 train_batch_size: 32
 max_train_steps: 500
