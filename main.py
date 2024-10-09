@@ -73,8 +73,10 @@ def train(
     accelerator = Accelerator(
         gradient_accumulation_steps=gradient_accumulation_steps,
         mixed_precision=mixed_precision,
-        log_with="wandb"
+        log_with='tensorboard',
+        project_dir=output_dir,
     )
+    accelerator.init_trackers('logs')
 
     # Make one log on every process with the configuration for debugging.
     logging.basicConfig(
@@ -376,9 +378,10 @@ def get_args_parser():
 
 def main(args):
 
-    print('start:', torch.cuda.max_memory_allocated())
+    start = torch.cuda.max_memory_allocated()/1024**3
     train(**OmegaConf.load(args.config))
-    print('end:', torch.cuda.max_memory_allocated())
+    end = torch.cuda.max_memory_allocated()/1024**3
+    print('start:', start, 'end:', end)
 
 
 if __name__ == "__main__":

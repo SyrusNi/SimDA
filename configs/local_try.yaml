@@ -1,13 +1,13 @@
 pretrained_model_path: "/share/test/nishengding/projects/SimDA/models/stable-diffusion-2-1"
-output_dir: "checkpoints/car-turn"
+output_dir: "/share/ckpt/nishengding/projects/SimDA/checkpoints/try"
 
 train_data:
-  video_path: "data/car-turn.mp4"
-  prompt: "a jeep car is moving on the road"
+  video_path: "/share/common/VideoDatasets/ActivityNet"
+  #prompt: "a jeep car is moving on the road"
   n_sample_frames: 8
   width: 64
   height: 64
-  sample_start_idx: 16
+  #sample_start_idx: 16
   sample_frame_rate: 2
 
 validation_data:
@@ -21,14 +21,15 @@ validation_data:
   height: 64
   num_inference_steps: 50
   guidance_scale: 12.5
-  use_inv_latent: True
+  use_inv_latent: False
   num_inv_steps: 50
 
+train_size: 16
 learning_rate: 5e-5
-train_batch_size: 1
+train_batch_size: 8
 max_train_steps: 50
 checkpointing_steps: 50
-validation_steps: 50
+validation_steps: 200
 trainable_modules:
   - "temp_adapter"
   - "adapter_s"
