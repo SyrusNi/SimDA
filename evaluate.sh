@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0,1 accelerate launch --multi_gpu --num_processes=2 evaluation.py --config="configs/evaluation.yaml"

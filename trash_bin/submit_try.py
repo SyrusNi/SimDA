@@ -25,7 +25,7 @@ def parse_args():
 
     #parser.add_argument("--partition", default="learnfair", type=str, help="Partition where to submit")
     parser.add_argument("--partition", default="fvl", type=str, help="Partition where to submit")
-    parser.add_argument("--qos", default="default", type=str, help="Quality of service")
+    parser.add_argument("--qos", default="low", type=str, help="Quality of service")
     parser.add_argument("--use_volta32", action='store_true', help="Big models? Use this")
     parser.add_argument("--use_3090", action='store_true', help="3090!")
     #parser.add_argument('--comment', default="", type=str, help='Comment to pass to scheduler, e.g. priority message')

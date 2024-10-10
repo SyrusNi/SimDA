@@ -67,6 +67,7 @@ def train(
     use_8bit_adam: bool = False,
     enable_xformers_memory_efficient_attention: bool = True,
     seed: Optional[int] = None,
+    **kwargs
 ):
     *_, config = inspect.getargvalues(inspect.currentframe())
 
@@ -76,7 +77,6 @@ def train(
         log_with='tensorboard',
         project_dir=output_dir,
     )
-    accelerator.init_trackers('logs')
 
     # Make one log on every process with the configuration for debugging.
     logging.basicConfig(
@@ -385,8 +385,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="./configs/simda.yaml")
+    parser = get_args_parser()
     args = parser.parse_args()
 
     main(args)

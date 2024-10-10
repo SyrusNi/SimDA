@@ -8,10 +8,10 @@ def get_args_parser():
     return parser
 
 def main(args):
-    print('amd yes')
-    ans = add(args.a, args.b)
-    print(ans)
-    return ans
+    import os
+
+    cmd = 'nvidia-smi'
+    os.system(cmd)
 
 if __name__ == "__main__":
     parser = get_args_parser()
