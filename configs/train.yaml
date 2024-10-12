@@ -24,6 +24,7 @@ validation_data:
   use_inv_latent: False
   num_inv_steps: 50
 
+resume_from_checkpoint: latest
 train_size: null
 learning_rate: 5e-5
 train_batch_size: 16

@@ -1,15 +1,15 @@
 evaluation_model_path: "/share/test/nishengding/projects/SimDA/models/clip-vit-base-patch32"
 pretrained_model_path: "/share/test/nishengding/projects/SimDA/models/stable-diffusion-2-1"
-my_model_path: "/share/ckpt/nishengding/projects/SimDA/checkpoints/try"
+my_model_path: "/share/ckpt/nishengding/projects/SimDA/checkpoints/train_0"
 
 evaluation_data:
   video_path: "/share/common/VideoDatasets/ActivityNet"
   video_length: 8
-  width: 64
-  height: 64
+  width: 256
+  height: 256
   
 evaluate_size: null
-batch_size: 32
+batch_size: 8
 num_inference_steps: 50
 guidance_scale: 12.5
 use_inv_latent: False

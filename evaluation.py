@@ -107,7 +107,7 @@ def evaluate(
             #print(logits_per_text)
             score = torch.mean(logits_per_text) * logits_per_text.size()[0]
             avg_score += accelerator.gather_for_metrics(score).mean()
-            accelerator.log({'score': avg_score}, step=step)
+            accelerator.log({'score': avg_score/(step+1)}, step=step)
 
             progress_bar.update(1)
             torch.cuda.empty_cache()
@@ -120,7 +120,10 @@ def evaluate(
     #save_videos_grid(video, f"./results/list.gif")
 
 def main(args):
+    start = torch.cuda.max_memory_allocated()/1024**3
     evaluate(**OmegaConf.load(args.config))
+    end = torch.cuda.max_memory_allocated()/1024**3
+    print('start:', start, 'end:', end)
 
 if __name__ == '__main__':
     parser = get_args_parser()
