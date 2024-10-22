@@ -8,7 +8,7 @@ evaluation_data:
   width: 256
   height: 256
   
-evaluate_size: null
+evaluate_size: 1024
 batch_size: 8
 num_inference_steps: 50
 guidance_scale: 12.5

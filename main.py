@@ -173,7 +173,7 @@ def train(
 
     # DataLoaders creation:
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=train_batch_size
+        train_dataset, batch_size=train_batch_size, shuffle = True
     )
 
     # Get the validation pipeline

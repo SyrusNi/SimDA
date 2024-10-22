@@ -24,7 +24,7 @@ def main(args):
     num_inference_steps = config.validation_data.num_inference_steps
     guidance_scale = config.validation_data.guidance_scale
 
-    prompt = "a micky mouse"
+    prompt = "students play football"
     #ddim_inv_latent = torch.load(f"{my_model_path}/inv_latents/ddim_latent-50.pt").to(torch.float16)
     video = pipe(prompt, 
                 latents=None, 

@@ -1,15 +1,14 @@
-# Copyright (c) 2015-present, Facebook, Inc.
-# All rights reserved.
-"""
-A script to run multinode training with submitit.
-"""
-import argparse
 import os
-import uuid
-from pathlib import Path
-
-import evaluation as classification
+import os
+import random
+import sys
 import submitit
+from omegaconf import DictConfig
+#from trainer.accelerators.utils import nvidia_smi_gpu_memory_stats
+import evaluation as classification
+import argparse
+from pathlib import Path
+import uuid
 
 
 def parse_args():
@@ -50,6 +49,7 @@ def get_init_file():
         os.remove(str(init_file))
     return init_file
 
+
 def print_env():
     for key in sorted(os.environ.keys()):
         if not (
@@ -61,64 +61,50 @@ def print_env():
         print(f"{key}={value}")
 
 
-class Trainer(object):
-    def __init__(self, args):
-        self.args = args
+class Task:
+
+    def __init__(self, cfg: DictConfig):
+        self.cfg = cfg
 
     def __call__(self):
-        #import main as classification
-
-        self._setup_gpu_args()
-        num_processes = self.args.ngpus * self.args.nodes
-        if num_processes > 1:
-            cmd = f'accelerate launch --multi_gpu --num_processes={num_processes} --num_machines={self.args.nodes} evaluation.py --config={self.args.config}'
-        else:
-            cmd = f'accelerate launch evaluation.py --config={self.args.config}'
-        print(f"Running command: {cmd}")
-        print_env()
-        os.system(cmd)
-        print('amd yes')
-
-    '''
-    def checkpoint(self):
-        import os
-        import submitit
-
-        self.args.dist_url = get_init_file().as_uri()
-        checkpoint_file = os.path.join(self.args.output_dir, "checkpoint.pth")
-        if os.path.exists(checkpoint_file):
-            self.args.resume = checkpoint_file
-        print("Requeuing ", self.args)
-        empty_trainer = type(self)(self.args)
-        return submitit.helpers.DelayedSubmission(empty_trainer)
-    '''
-
-    def _setup_gpu_args(self):
-        #import submitit
-        #from pathlib import Path
         print("Running task on slurm")
         print("exporting PyTorch distributed environment variables")
+        dist_env = submitit.helpers.TorchDistributedEnvironment()
+        rng = random.Random(dist_env._job_env.job_id)
+        dist_env.master_port = rng.randint(10000, 20000) + dist_env.rank
+        dist_env = dist_env.export()
         os.environ.update(**{
             "CUDA_LAUNCH_BLOCKING": "1",
             "NCCL_DEBUG": "info",
             "CUDA_VISIBLE_DEVICES": os.environ["SLURM_JOB_GPUS"],
         })
-        job_env = submitit.JobEnvironment()
-        #self.args.output_dir = Path(str(self.args.output_dir).replace("%j", str(job_env.job_id)))
-        #self.args.gpu = job_env.local_rank
-        #self.args.rank = job_env.global_rank
-        #self.args.world_size = job_env.num_tasks
-        print(f"Process group: {job_env.num_tasks} tasks, rank: {job_env.global_rank}")
+        #print(nvidia_smi_gpu_memory_stats())
+        print(f"master: {dist_env.master_addr}:{dist_env.master_port}")
+        print(f"rank: {dist_env.rank}")
+        print(f"world size: {dist_env.world_size}")
+        print(f"local rank: {dist_env.local_rank}")
+        print(f"local world size: {dist_env.local_world_size}")
+        print("Running training script")
+        print(f"Local rank {dist_env.local_rank}: {os.environ['CUDA_VISIBLE_DEVICES']=}")
+        num_processes = self.cfg.ntasks * self.cfg.nodes
+        machine_rank = dist_env.rank // self.cfg.ntasks
+        cmd = f"accelerate launch --dynamo_backend no --num_processes {num_processes} --num_machines {self.cfg.nodes} --use_deepspeed --machine_rank {machine_rank} --main_process_ip {dist_env.master_addr} --main_process_port {dist_env.master_port} evaluation.py --config={self.cfg.config}"
+        print(f"Running command: {cmd}")
+        print_env()
+        os.system(cmd)
+
+    def checkpoint(self):
+        print("checkpointing")
+        return submitit.helpers.DelayedSubmission(self)
 
 
-def main():
+#@hydra.main(version_base=None, config_path="../conf", config_name="slurm_config")
+def main() -> None:
     args = parse_args()
     if args.job_dir == "":
         args.job_dir = get_shared_folder() / "%j"
-
-    # Note that the folder will depend on the job_id, to easily track experiments
     executor = submitit.AutoExecutor(folder=args.job_dir, slurm_max_num_timeout=30)
-
+    #print(cfg)
     kwargs = {}
     if args.use_volta32:
         kwargs['slurm_constraint'] = 'volta32gb'
@@ -143,13 +129,11 @@ def main():
 
     executor.update_parameters(name=args.name)
 
-    #args.dist_url = get_init_file().as_uri()
-    #args.output_dir = args.job_dir
-
-    trainer = Trainer(args)
-    job = executor.submit(trainer)
+    task = Task(args)
+    job = executor.submit(task)
 
     print("Submitted job_id:", job.job_id)
+    #submitit.helpers.monitor_jobs([job], poll_frequency=60)
 
 
 if __name__ == "__main__":
